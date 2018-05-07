@@ -1,0 +1,10 @@
+[network]
+rpc_host = 10.0.0.7:8545
+websocket_host = 10.0.0.7:8546
+
+[db]
+protocol = tcp
+host = 172.17.0.2
+name = eth
+user = eth_user
+pass = eth_pass
