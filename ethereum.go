@@ -58,13 +58,8 @@ func ImportPrivateHex(h string) (*ecdsa.PrivateKey, error) {
 	return key, nil
 }
 
-func CreateAddress() (string, string, error) {
+func PrivateKeyToAddress(key *ecdsa.PrivateKey) (string, string) {
 	var publickey bytes.Buffer
-
-	key, err := GenerateKey()
-	if err != nil {
-		return "", "", err
-	}
 
 	publickey.Write(Prepend(key.PublicKey.X.Bytes(), 32))
 	publickey.Write(Prepend(key.PublicKey.Y.Bytes(), 32))
@@ -73,7 +68,37 @@ func CreateAddress() (string, string, error) {
 
 	hash := Keccak256(publickey.Bytes())
 
-	return fmt.Sprintf("%x", hash[12:]), fmt.Sprintf("%x", privatekey), nil
+	return fmt.Sprintf("%x", hash[12:]), fmt.Sprintf("%x", privatekey)
+}
+
+func CreateAddress() (string, string, error) {
+	key, err := GenerateKey()
+	if err != nil {
+		return "", "", err
+	}
+
+	address, private := PrivateKeyToAddress(key)
+
+	return address, private, nil
+}
+
+func PrivateHexToAddress(private string) (string, error) {
+	key, err := crypto.HexToECDSA(private)
+	if err != nil {
+		return "", err
+	}
+
+	address, privateVerify := PrivateKeyToAddress(key)
+
+	if private != privateVerify {
+		return "", fmt.Errorf("Invalid private verification")
+	}
+
+	return address, nil
+}
+
+func IsAddress(address string) bool {
+	return common.IsHexAddress(address)
 }
 
 func ConnectRPC(config *Config) (*ethclient.Client, error) {

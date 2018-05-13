@@ -105,6 +105,46 @@ $ curl -s -X POST "http://localhost:8080/createAddress?with_private=true" | pyth
 }
 ```
 
+### Register an existing Ethereum address in database
+
+Save in database an external Ethereum address (with or without private key)
+
+#### URL
+
+  /registerAddress
+
+#### Method
+
+  POST
+
+#### Data Params
+
+  **Mandatory:**
+
+  `address=[address]`: The address to register
+
+  **Optional:**
+
+  `private=[private]`: The private key to associate to given address key
+
+#### Success response:
+
+  * **Code:** 200<br>
+    **Content:** `{"response":{"message":"Address saved in database"},"result":"success"}`
+
+#### Error response:
+
+  * **Code:** 500<br>
+    **Content:** `{"response":{"error":"Could not save newly created key: Error 1146: Table 'eth.eth_keys' doesn't exist"},"result":"failure"}`
+
+#### Sample
+
+```shell
+$ curl -q -X POST -d address=75e59402d6f5ac5ea875ac4d63d9012a43777119 -d private=952782d2bc3e9c8802e0c2c2e282da5816d297b5c7b6d5120e99826942def3fa "http://localhost:8080/registerAddress"
+{"response":{"message":"Address saved in database"},"result":"success"}
+```
+
+
 ### Retrieve Ethereum balance
 
 Returns the Ethereum coin (ETH) balance or the erc20 token balance (if `contract` parameter is set).
@@ -243,7 +283,9 @@ Send ERC20 token using a private key and contract address to another Ethereum ad
 
   `contract=[contract]` The contract address to use
 
-  `private=[private]` The private key to use to send coins
+  `private=[private]` The private key to use to send coins; At least a `private` or an `address_from` is required
+
+  `address_from=[address_from]` The address to use to send coins, retrieving private key from database; At least a `private` or an `address_from` is required
 
   `address=[address]` The address key to send coins to
 

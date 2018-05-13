@@ -59,6 +59,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		log.Println("Schema created in database.")
+
 		return
 	}
 
@@ -76,9 +78,10 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/createAddress", CreateAddressHandler(config, db)).Methods("POST")
+	r.HandleFunc("/registerAddress", RegisterAddressHandler(config, db)).Methods("POST")
 	r.HandleFunc("/getBalance", GetBalanceHandler(config))
 	r.HandleFunc("/sendEth", SendEthHandler(config))
-	r.HandleFunc("/sendErc20", SendERC20Handler(config))
+	r.HandleFunc("/sendErc20", SendERC20Handler(config, db))
 	r.HandleFunc("/getNotifications", GetNotificationsHandler(config, db))
 
 	r.NotFoundHandler = http.HandlerFunc(NotFoundHandler)

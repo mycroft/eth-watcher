@@ -64,6 +64,50 @@ func CreateAddressHandler(config *Config, db *DB) func(w http.ResponseWriter, r 
 	}
 }
 
+func RegisterAddressHandler(config *Config, db *DB) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			log.Printf("RegisterAddressHandler: Could not parse body parameters")
+			RespondWithError(w, 400, "Could not parse parameters")
+			return
+		}
+
+		address := r.Form.Get("address")
+		private := r.Form.Get("private")
+
+		if false == IsAddress(address) {
+			log.Printf("Invalid 'address' field: Not an hex address")
+			RespondWithError(w, 400, "Invalid 'address' field: Not an hex address")
+			return
+		}
+
+		if private != "" {
+			addressVerify, err := PrivateHexToAddress(private)
+			if err != nil {
+				log.Printf("Invalid 'private' field: Could not transform to private key")
+				RespondWithError(w, 400, "Invalid 'private' field: Could not transform to private key")
+				return
+			}
+
+			if address != addressVerify {
+				log.Printf("Given 'address' and 'private' key doesn't match.")
+				RespondWithError(w, 400, "Given 'address' and 'private' key doesn't match.")
+				return
+			}
+		}
+
+		// InsertKey will UPSERT.
+		err = db.InsertKey(address, private)
+		if err != nil {
+			RespondWithError(w, 500, fmt.Sprintf("Could not save newly created key: %v", err))
+			return
+		}
+
+		Respond(w, 200, map[string]string{"message": "Address saved in database"})
+	}
+}
+
 func GetBalanceHandler(config *Config) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var balance *big.Int
@@ -155,7 +199,7 @@ func SendEthHandler(config *Config) func(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func SendERC20Handler(config *Config) func(w http.ResponseWriter, r *http.Request) {
+func SendERC20Handler(config *Config, db *DB) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
@@ -165,6 +209,7 @@ func SendERC20Handler(config *Config) func(w http.ResponseWriter, r *http.Reques
 		}
 
 		address := r.Form.Get("address")
+		addressFrom := r.Form.Get("address_from")
 		contract := r.Form.Get("contract")
 		private := r.Form.Get("private")
 		amount := r.Form.Get("amount")
@@ -181,9 +226,9 @@ func SendERC20Handler(config *Config) func(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		if private == "" {
-			log.Printf("Got Send Ethereum order but 'private' field is missing")
-			RespondWithError(w, 400, "Missing 'private' field")
+		if private == "" || addressFrom == "" {
+			log.Printf("Got Send Ethereum order but 'private' and 'address_from' fields are missing")
+			RespondWithError(w, 400, "'address_from' and'private' fields are both missing. At least one is mandatory ")
 			return
 		}
 
@@ -191,6 +236,21 @@ func SendERC20Handler(config *Config) func(w http.ResponseWriter, r *http.Reques
 			log.Printf("Got Send Ethereum order but 'amount' field is missing")
 			RespondWithError(w, 400, "Missing 'amount' field")
 			return
+		}
+
+		if private == "" {
+			private, err := db.GetKey(addressFrom)
+			if err != nil {
+				log.Printf("Could not retrieve the address_from private key: %v", err)
+				RespondWithError(w, 400, fmt.Sprintf("Error while retrieving the private key: %v", err))
+				return
+			}
+
+			if private == "" {
+				log.Printf("Private key of given address_from is not known.")
+				RespondWithError(w, 400, fmt.Sprintf("Unknown private key for %s", addressFrom))
+				return
+			}
 		}
 
 		bgAmount := new(big.Int)

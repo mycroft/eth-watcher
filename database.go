@@ -55,7 +55,7 @@ func (db *DB) InitTables() error {
 	queries := []string{`
 		CREATE TABLE eth_keys(
 			id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-			address VARCHAR(40),
+			address VARCHAR(40) UNIQUE,
 			private VARCHAR(64)
 		);`,
 		`CREATE INDEX eth_keys_address_idx ON eth_keys(address);`,
@@ -87,13 +87,13 @@ func (db *DB) InitTables() error {
 }
 
 func (db *DB) InsertKey(address, private string) error {
-	stmt, err := db.Interface.Prepare("INSERT INTO eth_keys(address, private) VALUES(?, ?)")
+	stmt, err := db.Interface.Prepare("INSERT INTO eth_keys(address, private) VALUES(LOWER(?), ?) ON DUPLICATE KEY UPDATE private = ?")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(address, private)
+	_, err = stmt.Exec(address, private, private)
 	if err != nil {
 		return err
 	}
@@ -151,6 +151,23 @@ func (db *DB) GetSetting(name string) (string, error) {
 	defer stmt.Close()
 
 	err = stmt.QueryRow(name).Scan(&value)
+	if err != nil {
+		return "", err
+	}
+
+	return value, nil
+}
+
+func (db *DB) GetKey(address string) (string, error) {
+	var value string
+
+	stmt, err := db.Interface.Prepare("SELECT private FROM eth_keys WHERE address = LOWER(?)")
+	if err != nil {
+		return "", err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(address).Scan(&value)
 	if err != nil {
 		return "", err
 	}
