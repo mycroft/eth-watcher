@@ -317,7 +317,7 @@ func ParseTransaction(tx *types.Transaction, isPending bool) (NotifyMessage, err
 		value = tx.Value()
 
 		if fDebug {
-			log.Printf("ETH: %x => %x / Value: %s (pending:%v)\n", from.Str(), dest.Str(), value.Text(10), isPending)
+			log.Printf("ETH: %x => %x / Value: %s (pending:%v)\n", from.String(), dest.String(), value.Text(10), isPending)
 		}
 
 		return NotifyMessage{
@@ -333,7 +333,7 @@ func ParseTransaction(tx *types.Transaction, isPending bool) (NotifyMessage, err
 		contractDest = *tx.To()
 
 		if fDebug {
-			log.Printf("Contract(%x): %x => %x / Value: %s (pending:%v)\n", contractDest.Str(), from.Str(), dest.Str(), value.Text(10), isPending)
+			log.Printf("Contract(%x): %x => %x / Value: %s (pending:%v)\n", contractDest.String(), from.String(), dest.String(), value.Text(10), isPending)
 		}
 
 		return NotifyMessage{
