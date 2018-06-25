@@ -263,8 +263,14 @@ func GetContractDestAddress(data []byte) (common.Address, *big.Int, error) {
 	value := new(big.Int)
 
 	for len(data) > 0 {
-		params = append(params, data[:32])
-		data = data[32:]
+		if len(data) < 32 {
+			params = append(params, make([]byte, 32-len(data)))
+			params = append(params, data[:len(data)])
+			data = data[len(data):]
+		} else {
+			params = append(params, data[:32])
+			data = data[32:]
+		}
 	}
 
 	if bytes.Equal(transferAddr, command) {
