@@ -206,7 +206,7 @@ func (db *DB) GetNotifications(remove bool) ([]NotifyMessage, error) {
 	rows, err := stmt.Query()
 	for rows.Next() {
 		var msg NotifyMessage
-		var amount uint64
+		var amount string
 
 		err := rows.Scan(
 			&id,
@@ -219,7 +219,7 @@ func (db *DB) GetNotifications(remove bool) ([]NotifyMessage, error) {
 		)
 
 		msg.Amount = new(big.Int)
-		msg.Amount.SetUint64(amount)
+		msg.Amount.SetString(amount, 10)
 
 		if err != nil {
 			return []NotifyMessage{}, err
